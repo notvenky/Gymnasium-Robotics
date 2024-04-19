@@ -93,6 +93,14 @@ def register_robotics_envs():
             max_episode_steps=50,
         )
 
+
+        register(
+            id="HandReach_Image-v0",
+            entry_point="gymnasium_robotics.envs.shadow_dexterous_hand.reach_img:MujocoHandReachImgEnv",
+            kwargs=kwargs,
+            max_episode_steps=100,
+        )
+
         register(
             id=f"HandManipulateBlockRotateZ{suffix}-v0",
             entry_point="gymnasium_robotics.envs.shadow_dexterous_hand.manipulate_block:MujocoPyHandBlockEnv",
