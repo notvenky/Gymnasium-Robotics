@@ -495,7 +495,7 @@ class MujocoHandReachImgEnv(get_base_hand_reanch_env(MujocoHandEnv)):
         ]
         return np.array(goal).flatten()
     
-    def reset(self):
+    def reset(self, seed=None):
         """Reset the environment and return the initial observation."""
         self._reset_sim()
         self.goal = self._sample_goal()

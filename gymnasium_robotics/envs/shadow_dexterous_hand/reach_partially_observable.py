@@ -188,11 +188,3 @@ class MujocoHandReachPOEnv(get_base_hand_reanch_env(MujocoHandEnv)):
                 achieved_goal[finger_idx] - sites_offset[site_id]
             )
         self._mujoco.mj_forward(self.model, self.data)
-
-    def reset(self):
-        """Reset the environment and return the initial observation."""
-        self._reset_sim()
-        self.goal = self._sample_goal()
-        self._achieved_goal = self._get_achieved_goal().copy()
-        self._last_obs = self._get_obs()
-        return self._last_obs, {}
