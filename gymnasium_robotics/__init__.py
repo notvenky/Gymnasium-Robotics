@@ -98,7 +98,7 @@ def register_robotics_envs():
             id="HandReachImage-v0",
             entry_point="gymnasium_robotics.envs.shadow_dexterous_hand.reach_img:MujocoHandReachImgEnv",
             kwargs=kwargs,
-            max_episode_steps=100,
+            max_episode_steps=200,
         )
 
         register(
