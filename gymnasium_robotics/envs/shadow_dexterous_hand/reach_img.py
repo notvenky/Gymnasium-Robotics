@@ -6,6 +6,9 @@ from typing import Union
 import numpy as np
 from gymnasium.utils.ezpickle import EzPickle
 
+import gymnasium as gym
+from gymnasium import spaces
+
 from gymnasium_robotics.envs.shadow_dexterous_hand import MujocoHandEnv, MujocoPyHandEnv
 
 FINGERTIP_SITE_NAMES = [
@@ -409,12 +412,30 @@ class MujocoHandReachImgEnv(get_base_hand_reanch_env(MujocoHandEnv)):
         self.frame_stack = frame_stack
         self.img_size = img_size
         self.frames = np.zeros((self.img_size[0], self.img_size[1], self.frame_stack), dtype=np.uint8)
+        
         super().__init__(*args, **kwargs)
+        self.observation_space = spaces.Dict({
+            "pixel_observation": spaces.Box(low=0, high=255, shape=(self.img_size[0], self.img_size[1], self.frame_stack), dtype=np.uint8),
+            "observation": spaces.Box(low=-np.inf, high=np.inf, shape=(63,), dtype=np.float32),
+            "achieved_goal": spaces.Box(low=-np.inf, high=np.inf, shape=(15,), dtype=np.float32),
+            "desired_goal": spaces.Box(low=-np.inf, high=np.inf, shape=(15,), dtype=np.float32),
+        })
         self.init_renderer()
 
     def init_renderer(self):
         from gymnasium.envs.mujoco.mujoco_rendering import MujocoRenderer
         self.mujoco_renderer = MujocoRenderer(self.model, self.data)
+
+    def step(self, action):
+        self._set_action(action)
+        self._mujoco_step(action)
+        self._step_callback()
+        obs = self._get_obs()
+        reward = self.compute_reward(obs['achieved_goal'], obs['desired_goal'], {})
+        info = {'is_success': self._is_success(obs['achieved_goal'], obs['desired_goal'])}
+        terminated = self.compute_terminated(obs["achieved_goal"], self.goal, info)
+        truncated = self.compute_truncated(obs["achieved_goal"], self.goal, info)
+        return obs, reward, terminated, truncated, info
 
     def _preprocess_image(self, image):
         """Convert to grayscale and resize."""
@@ -480,54 +501,4 @@ class MujocoHandReachImgEnv(get_base_hand_reanch_env(MujocoHandEnv)):
         self.goal = self._sample_goal()
         self._achieved_goal = self._get_achieved_goal().copy()
         self._last_obs = self._get_obs()
-        return self._last_obs
-
-
-class MujocoPyHandReachEnv(get_base_hand_reanch_env(MujocoPyHandEnv)):
-    def _get_achieved_goal(self):
-        goal = [self.sim.data.get_site_xpos(name) for name in FINGERTIP_SITE_NAMES]
-
-        return np.array(goal).flatten()
-
-    # RobotEnv methods
-    # ----------------------------
-
-    def _env_setup(self, initial_qpos):
-        for name, value in initial_qpos.items():
-            self.sim.data.set_joint_qpos(name, value)
-        self.sim.forward()
-
-        self.initial_goal = self._get_achieved_goal().copy()
-        self.palm_xpos = self.sim.data.body_xpos[
-            self.sim.model.body_name2id("robot0:palm")
-        ].copy()
-
-    def _get_obs(self):
-        robot_qpos, robot_qvel = self._utils.robot_get_obs(self.sim)
-
-        achieved_goal = self._get_achieved_goal().ravel()
-        observation = np.concatenate([robot_qpos, robot_qvel, achieved_goal])
-        return {
-            "observation": observation.copy(),
-            "achieved_goal": achieved_goal.copy(),
-            "desired_goal": self.goal.copy(),
-        }
-
-    def _render_callback(self):
-        # Visualize targets.
-        sites_offset = (self.sim.data.site_xpos - self.sim.model.site_pos).copy()
-        goal = self.goal.reshape(5, 3)
-        for finger_idx in range(5):
-            site_name = f"target{finger_idx}"
-            site_id = self.sim.model.site_name2id(site_name)
-            self.sim.model.site_pos[site_id] = goal[finger_idx] - sites_offset[site_id]
-
-        # Visualize finger positions.
-        achieved_goal = self._get_achieved_goal().reshape(5, 3)
-        for finger_idx in range(5):
-            site_name = f"finger{finger_idx}"
-            site_id = self.sim.model.site_name2id(site_name)
-            self.sim.model.site_pos[site_id] = (
-                achieved_goal[finger_idx] - sites_offset[site_id]
-            )
-        self.sim.forward()
+        return self._last_obs, {}
