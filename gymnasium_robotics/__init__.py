@@ -102,6 +102,13 @@ def register_robotics_envs():
         )
 
         register(
+            id="HandReachPO-v0",
+            entry_point="gymnasium_robotics.envs.shadow_dexterous_hand.reach_partially_observable:MujocoHandReachPOEnv",
+            kwargs=kwargs,
+            max_episode_steps=200,
+        )
+
+        register(
             id=f"HandManipulateBlockRotateZ{suffix}-v0",
             entry_point="gymnasium_robotics.envs.shadow_dexterous_hand.manipulate_block:MujocoPyHandBlockEnv",
             kwargs=_merge(
