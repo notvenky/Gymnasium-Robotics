@@ -476,7 +476,7 @@ class MujocoHandReachImgEnv(get_base_hand_reanch_env(MujocoHandEnv)):
     
     def reset(self):
         """Reset the environment and return the initial observation."""
-        self._reset_
+        self._reset_sim()
         self.goal = self._sample_goal()
         self._achieved_goal = self._get_achieved_goal().copy()
         self._last_obs = self._get_obs()
@@ -484,7 +484,6 @@ class MujocoHandReachImgEnv(get_base_hand_reanch_env(MujocoHandEnv)):
 
 
 class MujocoPyHandReachEnv(get_base_hand_reanch_env(MujocoPyHandEnv)):
-    """I am not using this class, so left it unchanged"""
     def _get_achieved_goal(self):
         goal = [self.sim.data.get_site_xpos(name) for name in FINGERTIP_SITE_NAMES]
 
